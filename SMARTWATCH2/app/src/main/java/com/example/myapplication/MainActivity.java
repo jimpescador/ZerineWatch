@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -10,6 +11,7 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.annotation.SuppressLint;
@@ -264,12 +266,12 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
+            FallDetectionService detect = new FallDetectionService();
             final SensorEvent event1=event;
             mTextView = (TextView) findViewById(R.id.BPM_Value);
             mTextView.setText(Float.toString(event1.values[0]));
             if(event1.values[0] >= 40 && event1.values[0] <= 100) {
                 mTextViewSpo2.setText("96%");
-                sendData("1");
             }
             if(event1.values[0] >= 101 && event1.values[0] <= 109) {
                 mTextViewSpo2.setText("95%");
@@ -277,12 +279,90 @@ public class MainActivity extends AppCompatActivity {
             if(event1.values[0] >= 131 ) {
                 mTextViewSpo2.setText("93%");
             }
+
+            //condition
+            if (event1.values[0] >= 120) {
+
+                // Calculate acceleration based on sensor data
+                float acceleration = calculateAcceleration(event1);
+
+                // Fall detection logic (example: check for sudden change in acceleration)
+                if (isFallDetected(acceleration)) {
+                    // Perform actions when fall is detected
+                    showSeizureAndFallAlert();
+                    sendData("1");
+                }
+                else{
+                    sendData("1");
+                    showSeizure();
+                }
+            }
+
+            if (event1.values[0] >= 106) {
+                showHeartRateWarning();
+            }
+
+        }
+
+        private void showSeizureAndFallAlert() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Seizure and Fall Alert")
+                    .setMessage("A seizure and fall are detected! Please dismiss this alert.")
+                    .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Handle dismissal, if needed
+                            dialog.dismiss();
+                        }
+                    })
+                    .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
+                    .show();
+        }
+        private void showSeizure() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Seizure")
+                    .setMessage("A seizure is detected! Please dismiss this alert.")
+                    .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Handle dismissal, if needed
+                            dialog.dismiss();
+                        }
+                    })
+                    .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
+                    .show();
+        }
+
+        private void showHeartRateWarning() {
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("Warning")
+                    .setMessage("Warning: Your heart rate is high. Please sit down or look for a safe place.")
+                    .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            // Handle dismissal, if needed
+                            dialog.dismiss();
+                        }
+                    })
+                    .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
+                    .show();
         }
 
 
+
+    private float calculateAcceleration(SensorEvent event) {
+        // Calculate acceleration based on sensor data
+        // Replace this with your own calculation based on accelerometer values
+        return 60.0f;
+    }
+
+    private boolean isFallDetected(float acceleration) {
+        // Implement your fall detection logic here
+        // This is a placeholder, replace it with your own fall detection algorithm
+        return acceleration > 10.0f;
+    }
+
     };
-
-
 }
 
 
