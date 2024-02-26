@@ -266,22 +266,27 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
+
+
             FallDetectionService detect = new FallDetectionService();
             final SensorEvent event1=event;
             mTextView = (TextView) findViewById(R.id.BPM_Value);
-            mTextView.setText(Float.toString(event1.values[0]));
-            if(event1.values[0] >= 40 && event1.values[0] <= 100) {
+            float sensorValue = event1.values[0];
+
+            mTextView.setText(Float.toString(sensorValue));
+            if(sensorValue >= 40 && sensorValue <= 100) {
                 mTextViewSpo2.setText("96%");
+
             }
-            if(event1.values[0] >= 101 && event1.values[0] <= 109) {
+            if(sensorValue >= 101 && sensorValue <= 109) {
                 mTextViewSpo2.setText("95%");
             }
-            if(event1.values[0] >= 131 ) {
+            if(sensorValue >= 131 ) {
                 mTextViewSpo2.setText("93%");
             }
 
             //condition
-            if (event1.values[0] >= 120) {
+            if (sensorValue >= 120) {
 
                 // Calculate acceleration based on sensor data
                 float acceleration = calculateAcceleration(event1);
@@ -298,15 +303,17 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            if (event1.values[0] >= 106) {
+            if (sensorValue >= 106 && sensorValue <= 115) {
+
                 showHeartRateWarning();
+
             }
 
         }
 
         private void showSeizureAndFallAlert() {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("Seizure and Fall Alert")
+            builder.setTitle("          Seizure and Fall Alert")
                     .setMessage("A seizure and fall are detected! Please dismiss this alert.")
                     .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
                         @Override
@@ -320,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
         }
         private void showSeizure() {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("Seizure")
+            builder.setTitle("          Seizure")
                     .setMessage("A seizure is detected! Please dismiss this alert.")
                     .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
                         @Override
@@ -333,9 +340,9 @@ public class MainActivity extends AppCompatActivity {
                     .show();
         }
 
-        private void showHeartRateWarning() {
+        private void  showHeartRateWarning() {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("Warning")
+            builder.setTitle("          Warning")
                     .setMessage("Warning: Your heart rate is high. Please sit down or look for a safe place.")
                     .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
                         @Override
