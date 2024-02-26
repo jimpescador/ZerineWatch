@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "712990583328",
+    "project_id": "database-ea0bd",
+    "storage_bucket": "database-ea0bd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:712990583328:android:81520609a6e57c533aea45",
+        "android_client_info": {
+          "package_name": "com.example.myapplication"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgP2D7U5sICJUa7aUctCvoCu-8H6betRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:712990583328:android:af908d2e422ff33c3aea45",
+        "android_client_info": {
+          "package_name": "com.example.zerine"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgP2D7U5sICJUa7aUctCvoCu-8H6betRo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

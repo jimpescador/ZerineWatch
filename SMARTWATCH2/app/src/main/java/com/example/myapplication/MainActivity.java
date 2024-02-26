@@ -25,6 +25,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 import static com.google.android.gms.wearable.DataMap.TAG;
+
 import static java.lang.Math.round;
 
 import java.io.IOException;
@@ -33,12 +34,26 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
 import android.content.Intent;
 import android.widget.Toast;
+
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.FirebaseOptions;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
 
 
 public class MainActivity extends AppCompatActivity {
@@ -47,6 +62,10 @@ public class MainActivity extends AppCompatActivity {
     private Sensor offBodySensor;
     private TextView mTextView;
     private TextView mTextViewSpo2;
+    private float sensorValue;
+
+    private DatabaseReference myRef;
+
 
     private static final int REQUEST_CODE_PERMISSION = 100;
     private static final String TODO = "";
@@ -57,11 +76,17 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothSocket bluetoothSocket;
     private OutputStream outputStream;
 
+    private FirebaseFirestore db;
+
+
+
     @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        FirebaseApp.initializeApp(this);
 
         startFallDetectionService();
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -75,6 +100,13 @@ public class MainActivity extends AppCompatActivity {
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
         DEVICE_ADDRESS = getCurrentConnectedDeviceMacAddress();
+
+        db = FirebaseFirestore.getInstance();
+
+
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        myRef = database.getReference("RealData");
 
 
     }
@@ -273,6 +305,25 @@ public class MainActivity extends AppCompatActivity {
             mTextView = (TextView) findViewById(R.id.BPM_Value);
             float sensorValue = event1.values[0];
 
+            myRef.setValue(event1.values[0]).addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void unused) {
+                    Log.e("Firebase", "Success write");
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+                    Log.e("Firebase", "Failed write");
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Void>() {
+                @Override
+                public void onComplete(@NonNull Task<Void> task) {
+                    Log.e("Firebase", "Complete write");
+                }
+            });
+
+
+
             mTextView.setText(Float.toString(sensorValue));
             if(sensorValue >= 40 && sensorValue <= 100) {
                 mTextViewSpo2.setText("96%");
@@ -303,13 +354,15 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
 
-            if (sensorValue >= 106 && sensorValue <= 115) {
+            if (sensorValue >= 105 && sensorValue <= 115) {
 
                 showHeartRateWarning();
+                storeSensorValueInFirestore(sensorValue);
 
             }
 
         }
+    };
 
         private void showSeizureAndFallAlert() {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
@@ -341,6 +394,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private void  showHeartRateWarning() {
+
+
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("          Warning")
                     .setMessage("Warning: Your heart rate is high. Please sit down or look for a safe place.")
@@ -354,6 +409,41 @@ public class MainActivity extends AppCompatActivity {
                     .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
                     .show();
         }
+
+        private void storeSensorValueInFirestore(float sensorValue) {
+            // Create a new data object with sensorValue
+            Map<String, Object> data = new HashMap<>();
+            data.put("sensorValue", sensorValue);
+
+            // Add data to Firestore collection (replace "sensorData" with your desired collection name)
+            db.collection("sensorData")
+                    .add(data)
+                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                        @Override
+                        public void onSuccess(DocumentReference documentReference) {
+                            Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+
+                            // Stop the execution after successful write
+                            // This will prevent any further code from being executed after the write
+                            return;
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.w(TAG, "Error adding document", e);
+                            // Handle failure, if needed
+                        }
+                    });
+
+            // The execution will continue here, but will be stopped if onSuccess is triggered.
+            // Any code written here will not be executed after the successful write.
+            // If you have additional code that needs to be executed after the write, you can place it within onSuccess.
+        }
+
+
+
+
 
 
 
@@ -369,7 +459,9 @@ public class MainActivity extends AppCompatActivity {
         return acceleration > 10.0f;
     }
 
-    };
+
+
+
 }
 
 
