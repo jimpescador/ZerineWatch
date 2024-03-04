@@ -65,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private float sensorValue;
 
     private DatabaseReference myRef;
+    private DatabaseReference myRef2;
 
 
     private static final int REQUEST_CODE_PERMISSION = 100;
@@ -105,8 +106,10 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        FirebaseDatabase database = FirebaseDatabase.getInstance();
-        myRef = database.getReference("RealData");
+        FirebaseDatabase database = FirebaseDatabase.getInstance("https://database-ea0bd-default-rtdb.asia-southeast1.firebasedatabase.app");
+
+        myRef = database.getReference("sensorValues/currentValue");
+        myRef2 = database.getReference("sensorValues/spo2");
 
 
     }
@@ -289,6 +292,33 @@ public class MainActivity extends AppCompatActivity {
         mSensorManager.unregisterListener(mSensorEventListener);
 
     }
+
+    private void updateSpo2ValueInDatabase(String spo2Value) {
+        // Write the SPO2 value to the Firebase Realtime Database
+        myRef2.setValue(spo2Value)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.d(TAG, "SPO2 value set successfully");
+                            }
+                        });
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.d(TAG, "Failed to set SPO2 value. Error: " + e.getLocalizedMessage());
+                            }
+                        });
+                    }
+                });
+    }
     private SensorEventListener mSensorEventListener = new SensorEventListener() {
 
 
@@ -301,39 +331,48 @@ public class MainActivity extends AppCompatActivity {
 
 
             FallDetectionService detect = new FallDetectionService();
-            final SensorEvent event1=event;
-            mTextView = (TextView) findViewById(R.id.BPM_Value);
-            float sensorValue = event1.values[0];
+            final SensorEvent event1 = event;
+            mTextView = findViewById(R.id.BPM_Value);
+            final float sensorValue = event1.values[0];
 
-            myRef.setValue(event1.values[0]).addOnSuccessListener(new OnSuccessListener<Void>() {
+            myRef.setValue(sensorValue).addOnSuccessListener(new OnSuccessListener<Void>() {
                 @Override
                 public void onSuccess(Void unused) {
-                    Log.e("Firebase", "Success write");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "Value set successfully");
+                        }
+                    });
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception e) {
-                    Log.e("Firebase", "Failed write");
-                }
-            }).addOnCompleteListener(new OnCompleteListener<Void>() {
-                @Override
-                public void onComplete(@NonNull Task<Void> task) {
-                    Log.e("Firebase", "Complete write");
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "Failed to set value. Error: " + e.getLocalizedMessage());
+                        }
+                    });
                 }
             });
+
 
 
 
             mTextView.setText(Float.toString(sensorValue));
             if(sensorValue >= 40 && sensorValue <= 100) {
                 mTextViewSpo2.setText("96%");
+                updateSpo2ValueInDatabase("96%");
 
             }
             if(sensorValue >= 101 && sensorValue <= 109) {
                 mTextViewSpo2.setText("95%");
+                updateSpo2ValueInDatabase("95%");
             }
             if(sensorValue >= 131 ) {
                 mTextViewSpo2.setText("93%");
+                updateSpo2ValueInDatabase("93%");
             }
 
             //condition

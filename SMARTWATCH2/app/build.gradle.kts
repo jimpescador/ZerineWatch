@@ -44,7 +44,7 @@ dependencies {
     implementation ("androidx.health:health-services-client:1.0.0-beta01")
     implementation ("com.google.firebase:firebase-firestore:23.0.0")
     implementation ("com.google.firebase:firebase-core:21.1.1")
-    implementation("com.google.firebase:firebase-database:23.3.0")
+    implementation("com.google.firebase:firebase-database:20.3.1")
 
 
 }
