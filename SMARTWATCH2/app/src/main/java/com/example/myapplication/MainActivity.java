@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.annotation.SuppressLint;
@@ -53,6 +54,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.DocumentSnapshot;
+
 
 
 
@@ -78,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
     private OutputStream outputStream;
 
     private FirebaseFirestore db;
+
+
 
 
 
@@ -375,37 +380,76 @@ public class MainActivity extends AppCompatActivity {
                 updateSpo2ValueInDatabase("93%");
             }
 
-            //condition
-            if (sensorValue >= 120) {
+            //condition & fetch data for alert trigger
+            db.collection("TriggerValues")
+                    .document("sharedTriggerValues")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            if (document.exists()) {
+                                // Retrieve minTriggerValue
+                                int Alert = document.getLong("Alert").intValue();
 
-                // Calculate acceleration based on sensor data
-                float acceleration = calculateAcceleration(event1);
+                                // Now you can use minTriggerValue in your sensor check
 
-                // Fall detection logic (example: check for sudden change in acceleration)
-                if (isFallDetected(acceleration)) {
-                    // Perform actions when fall is detected
-                    showSeizureAndFallAlert();
-                    sendData("1");
-                }
-                else{
-                    sendData("1");
-                    showSeizure();
-                }
-            }
 
-            if (sensorValue >= 105 && sensorValue <= 115) {
+                                if (sensorValue >= Alert) {
+                                    float acceleration = calculateAcceleration(event1);
 
-                showHeartRateWarning();
-                storeSensorValueInFirestore(sensorValue);
+                                    // Fall detection logic (example: check for sudden change in acceleration)
+                                    if (isFallDetected(acceleration)) {
+                                        // Perform actions when fall is detected
+                                        showSeizureAndFallAlert();
+                                        sendData("1");
+                                    }
+                                    else{
+                                        sendData("1");
+                                        showSeizure();
+                                    }
+                                }
+                            } else {
+                                Log.d(TAG, "No such document");
+                            }
+                        } else {
+                            Log.d(TAG, "get failed with ", task.getException());
+                        }
+                    });
 
-            }
+
+            //get warning trigger values
+
+            db.collection("TriggerValues")
+                    .document("sharedTriggerValues")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            if (document.exists()) {
+                                // Retrieve minTriggerValue
+                                int minTriggerValue = document.getLong("Warning").intValue();
+
+                                // Now you can use minTriggerValue in your sensor check
+
+
+                                if (sensorValue >= minTriggerValue) {
+                                    showHeartRateWarning();
+                                    storeSensorValueInFirestore(sensorValue);
+                                }
+                            } else {
+                                Log.d(TAG, "No such document");
+                            }
+                        } else {
+                            Log.d(TAG, "get failed with ", task.getException());
+                        }
+                    });
 
         }
     };
 
         private void showSeizureAndFallAlert() {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("          Seizure and Fall Alert")
+            builder.setTitle("                  Seizure and Fall Alert")
                     .setMessage("A seizure and fall are detected! Please dismiss this alert.")
                     .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
                         @Override
@@ -419,7 +463,7 @@ public class MainActivity extends AppCompatActivity {
         }
         private void showSeizure() {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("          Seizure")
+            builder.setTitle("                    Seizure")
                     .setMessage("A seizure is detected! Please dismiss this alert.")
                     .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
                         @Override
@@ -436,7 +480,7 @@ public class MainActivity extends AppCompatActivity {
 
 
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("          Warning")
+            builder.setTitle("                    Warning")
                     .setMessage("Warning: Your heart rate is high. Please sit down or look for a safe place.")
                     .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
                         @Override
@@ -448,6 +492,7 @@ public class MainActivity extends AppCompatActivity {
                     .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
                     .show();
         }
+
 
         private void storeSensorValueInFirestore(float sensorValue) {
             // Create a new data object with sensorValue
