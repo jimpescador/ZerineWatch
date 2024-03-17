@@ -14,12 +14,11 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
+
 import android.content.pm.PackageManager;
-import android.database.sqlite.SQLiteDatabase;
+
 import android.annotation.SuppressLint;
-import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
+
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -27,16 +26,15 @@ import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.PowerManager;
 import android.os.Vibrator;
 import android.util.Log;
 import android.widget.TextView;
-import static com.google.android.gms.wearable.DataMap.TAG;
 
 import static java.lang.Math.round;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,26 +50,15 @@ import java.util.UUID;
 import android.content.Intent;
 import android.widget.Toast;
 
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
-import com.google.firebase.Timestamp;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.database.annotations.Nullable;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -116,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
     private long lastWarningTime = 0; // Timestamp of the last warning
 
     private Handler handler = new Handler();
+    private PowerManager.WakeLock wakeLock;
+    private SensorManager sensorManager;
 
    private BroadcastReceiver fallDetectionReceiver = new BroadcastReceiver() {
         @Override
@@ -137,15 +126,43 @@ public class MainActivity extends AppCompatActivity {
 
         FirebaseApp.initializeApp(this);
 
+        Intent serviceIntent1 = new Intent(this, MyBackgroundService.class);
+        startService(serviceIntent1);
+
+        startService(new Intent(this, MyForegroundService.class));
+
+
+
 
         Intent serviceIntent = new Intent(this, FallDetectionService.class);
         startService(serviceIntent);
 
-        mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mHeartSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
         mTextView = (TextView) findViewById(R.id.BPM_Value);
         mTextViewSpo2 = (TextView) findViewById(R.id.SPO2_Value);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+        PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakeLockTag");
+        wakeLock.acquire();
+
+        if (getPackageManager().hasSystemFeature(PackageManager.FEATURE_SENSOR_HEART_RATE)) {
+            // Heart rate sensor is available
+            mHeartSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
+            if (mHeartSensor == null) {
+                // Handle case when heart rate sensor is not available
+                Toast.makeText(this, "Heart rate sensor not available", Toast.LENGTH_SHORT).show();
+            } else {
+                // Register the sensor listener
+                mSensorManager.registerListener(mSensorEventListener, mHeartSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            }
+        } else {
+            // Heart rate sensor is not available on this device
+            Toast.makeText(this, "Heart rate sensor not supported on this device", Toast.LENGTH_SHORT).show();
+        }
+
 
 
         // Check for permissions and request if not granted
@@ -173,6 +190,7 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
         IntentFilter filter = new IntentFilter("FALL_DETECTED");
         LocalBroadcastManager.getInstance(this).registerReceiver(fallDetectionReceiver, filter);
+
     }
 
     @Override
@@ -183,7 +201,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showAlert() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Fall Detected")
+        builder.setTitle("          Fall Detected")
                 .setMessage("A fall has been detected!")
                 .setPositiveButton("OK", null)
                 .show();
@@ -712,12 +730,11 @@ public class MainActivity extends AppCompatActivity {
 
             // Create a timestamp for the day
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
-            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-            String timestamp = sdf.format(new Date()) + " UTC";
+            sdf.setTimeZone(TimeZone.getTimeZone("GMT+8"));
+            String timestamp = sdf.format(new Date());
 
             // Update the Firestore document with the average BPM and timestamp
             Map<String, Object> sensorData = new HashMap<>();
-            sensorData.put("Date", date);
             sensorData.put("AvgBPM", roundedAvgBPM);
             sensorData.put("Timestamp", timestamp);
 
@@ -736,9 +753,24 @@ public class MainActivity extends AppCompatActivity {
                         }
                     });
         }
-    }
 
     }
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        calculateAndStoreDailyAverageBPM();
+        Log.d(TAG, "AVGBPM success");
+        if (wakeLock.isHeld()) {
+            wakeLock.release();
+        }
+
+        // Unregister sensor listener
+        sensorManager.unregisterListener(mSensorEventListener);
+
+    }
+
+
+}
 
 
 

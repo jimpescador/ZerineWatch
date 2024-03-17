@@ -17,6 +17,10 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <uses-permission android:name="android.permission.BODY_SENSORS_BACKGROUND"/>
+
 
 
 
@@ -28,9 +32,7 @@
         android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Design.Light.NoActionBar">
-        <activity
-            android:name=".ConnectionHelper"
-            android:exported="false" />
+
         <activity
             android:name=".FallDetectionService"
             android:exported="false" />
@@ -39,6 +41,8 @@
             android:name=".FallDetectionService"
             android:enabled="true"
             android:exported="false" />
+
+        <service android:name=".MyForegroundService"/>
 
         <activity
             android:name=".MainActivity"

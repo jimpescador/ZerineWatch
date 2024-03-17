@@ -45,6 +45,8 @@ dependencies {
     implementation ("com.google.firebase:firebase-firestore:23.0.0")
     implementation ("com.google.firebase:firebase-core:21.1.1")
     implementation("com.google.firebase:firebase-database:20.3.1")
+    implementation ("com.google.android.gms:play-services-location:18.0.0")
+
 
 
 }
