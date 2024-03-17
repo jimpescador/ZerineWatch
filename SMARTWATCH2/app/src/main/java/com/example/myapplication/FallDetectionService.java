@@ -1,4 +1,5 @@
 package com.example.myapplication;
+
 import android.app.Service;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -6,8 +7,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.IBinder;
-import android.util.Log;
-import android.widget.Toast;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 public class FallDetectionService extends Service {
 
@@ -74,14 +74,12 @@ public class FallDetectionService extends Service {
     private boolean isFallDetected(float acceleration) {
         // Implement fall detection logic based on acceleration values
         // For simplicity, a threshold value is used here. In a real-world scenario, a more sophisticated algorithm would be needed.
-        return acceleration > 60.0f;
+        return acceleration > 50.0f;
     }
 
     private void handleFallDetected() {
-        // Display a Toast message when a fall is detected
-        Toast.makeText(this, "Fall detected!", Toast.LENGTH_SHORT).show();
-
-        // Add additional actions here, such as sending notifications, alerts, etc.
-        Log.d("FallDetectionService", "Fall detected!");
+        // Broadcast that fall is detected
+        Intent intent = new Intent("FALL_DETECTED");
+        LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 }

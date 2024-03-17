@@ -5,6 +5,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -12,6 +13,7 @@ import android.bluetooth.BluetoothSocket;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
@@ -23,6 +25,9 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Vibrator;
 import android.util.Log;
 import android.widget.TextView;
 import static com.google.android.gms.wearable.DataMap.TAG;
@@ -33,12 +38,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import android.content.Intent;
@@ -50,13 +58,20 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.Timestamp;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.google.firebase.database.annotations.Nullable;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
-
-
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -64,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
     private Sensor mHeartSensor;
     private Sensor offBodySensor;
     private TextView mTextView;
+
     private TextView mTextViewSpo2;
     private float sensorValue;
 
@@ -82,6 +98,33 @@ public class MainActivity extends AppCompatActivity {
 
     private FirebaseFirestore db;
 
+    private Map<String, List<Float>> dailyBPMMap = new HashMap<>();
+    private FirebaseFirestore firestore;
+    private CollectionReference collectionRef;
+
+    private boolean isSeizureAndFallAlertShown = false;
+
+    private boolean isSeizureAlertShown = false;
+
+    private boolean isWarningShown = false;
+    private AlertDialog seizureAndFallAlertDialog;
+    private AlertDialog seizureAlertDialog;
+    private AlertDialog heartRateAlertDialog;
+    private Vibrator vibrator;
+
+    private static final long RESET_TIME_INTERVAL = 300000; // 10 minutes in milliseconds
+    private long lastWarningTime = 0; // Timestamp of the last warning
+
+    private Handler handler = new Handler();
+
+   private BroadcastReceiver fallDetectionReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            // Show alert dialog here
+            showAlert();
+        }
+    };
+
 
 
 
@@ -94,11 +137,16 @@ public class MainActivity extends AppCompatActivity {
 
         FirebaseApp.initializeApp(this);
 
-        startFallDetectionService();
+
+        Intent serviceIntent = new Intent(this, FallDetectionService.class);
+        startService(serviceIntent);
+
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mHeartSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
         mTextView = (TextView) findViewById(R.id.BPM_Value);
         mTextViewSpo2 = (TextView) findViewById(R.id.SPO2_Value);
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
 
         // Check for permissions and request if not granted
         checkAndRequestPermissions();
@@ -110,14 +158,37 @@ public class MainActivity extends AppCompatActivity {
         db = FirebaseFirestore.getInstance();
 
 
-
         FirebaseDatabase database = FirebaseDatabase.getInstance("https://database-ea0bd-default-rtdb.asia-southeast1.firebasedatabase.app");
 
         myRef = database.getReference("sensorValues/currentValue");
         myRef2 = database.getReference("sensorValues/spo2");
+        firestore = FirebaseFirestore.getInstance();
+        collectionRef = firestore.collection("BPM");
 
 
     }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter("FALL_DETECTED");
+        LocalBroadcastManager.getInstance(this).registerReceiver(fallDetectionReceiver, filter);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(fallDetectionReceiver);
+    }
+
+    private void showAlert() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Fall Detected")
+                .setMessage("A fall has been detected!")
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
 
     public String getCurrentConnectedDeviceMacAddress() {
         BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -273,7 +344,8 @@ public class MainActivity extends AppCompatActivity {
         Intent serviceIntent = new Intent(this, FallDetectionService.class);
         startService(serviceIntent);
     }
-    private void date(){
+
+    private void date() {
 
         Date c = Calendar.getInstance().getTime();
         System.out.println("Current time => " + c);
@@ -324,177 +396,246 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
     }
+
     private SensorEventListener mSensorEventListener = new SensorEventListener() {
 
 
-        @Override
-        public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        }
-
-        @Override
-        public void onSensorChanged(SensorEvent event) {
 
 
-            FallDetectionService detect = new FallDetectionService();
-            final SensorEvent event1 = event;
-            mTextView = findViewById(R.id.BPM_Value);
-            final float sensorValue = event1.values[0];
+            @Override
+            public void onAccuracyChanged(Sensor sensor, int accuracy) {
+            }
 
-            myRef.setValue(sensorValue).addOnSuccessListener(new OnSuccessListener<Void>() {
-                @Override
-                public void onSuccess(Void unused) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d(TAG, "Value set successfully");
-                        }
-                    });
+            @Override
+            public void onSensorChanged(SensorEvent event) {
+
+
+                FallDetectionService detect = new FallDetectionService();
+                final SensorEvent event1 = event;
+                mTextView = findViewById(R.id.BPM_Value);
+                final float sensorValue = event1.values[0];
+                addSensorValueToDailyMap(sensorValue);
+
+
+
+
+
+                myRef.setValue(sensorValue).addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.d(TAG, "Value set successfully");
+                            }
+                        });
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.d(TAG, "Failed to set value. Error: " + e.getLocalizedMessage());
+                            }
+                        });
+                    }
+                });
+
+
+
+
+
+                mTextView.setText(Float.toString(sensorValue));
+                if (sensorValue >= 40 && sensorValue <= 100) {
+                    mTextViewSpo2.setText("96%");
+                    updateSpo2ValueInDatabase("96%");
+
                 }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d(TAG, "Failed to set value. Error: " + e.getLocalizedMessage());
-                        }
-                    });
+                if (sensorValue >= 101 && sensorValue <= 109) {
+                    mTextViewSpo2.setText("95%");
+                    updateSpo2ValueInDatabase("95%");
                 }
-            });
+                if (sensorValue >= 131) {
+                    mTextViewSpo2.setText("93%");
+                    updateSpo2ValueInDatabase("93%");
+                }
 
+                //condition & fetch data for alert trigger
+                db.collection("TriggerValues")
+                        .document("sharedTriggerValues")
+                        .get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                DocumentSnapshot document = task.getResult();
+                                if (document.exists()) {
+                                    // Retrieve minTriggerValue
+                                    int Alert = document.getLong("Alert").intValue();
 
+                                    // Now you can use minTriggerValue in your sensor check
 
+                                    if (sensorValue >= Alert && !isSeizureAlertShown) {
 
-            mTextView.setText(Float.toString(sensorValue));
-            if(sensorValue >= 40 && sensorValue <= 100) {
-                mTextViewSpo2.setText("96%");
-                updateSpo2ValueInDatabase("96%");
-
-            }
-            if(sensorValue >= 101 && sensorValue <= 109) {
-                mTextViewSpo2.setText("95%");
-                updateSpo2ValueInDatabase("95%");
-            }
-            if(sensorValue >= 131 ) {
-                mTextViewSpo2.setText("93%");
-                updateSpo2ValueInDatabase("93%");
-            }
-
-            //condition & fetch data for alert trigger
-            db.collection("TriggerValues")
-                    .document("sharedTriggerValues")
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            DocumentSnapshot document = task.getResult();
-                            if (document.exists()) {
-                                // Retrieve minTriggerValue
-                                int Alert = document.getLong("Alert").intValue();
-
-                                // Now you can use minTriggerValue in your sensor check
-
-
-                                if (sensorValue >= Alert) {
-                                    float acceleration = calculateAcceleration(event1);
-
-                                    // Fall detection logic (example: check for sudden change in acceleration)
-                                    if (isFallDetected(acceleration)) {
-                                        // Perform actions when fall is detected
-                                        showSeizureAndFallAlert();
-                                        sendData("1");
-                                    }
-                                    else{
-                                        sendData("1");
+                                        // Show seizure alert
                                         showSeizure();
+                                        isSeizureAlertShown = true;
                                     }
+                                    else {
+                                            // Ensure isSeizureAndFallAlertShown is set to false if no fall is detected
+                                            isSeizureAlertShown = false;
+                                        }
+
+
+                                } else {
+                                    Log.d(TAG, "No such document");
+
                                 }
                             } else {
-                                Log.d(TAG, "No such document");
+                                Log.d(TAG, "get failed with ", task.getException());
                             }
-                        } else {
-                            Log.d(TAG, "get failed with ", task.getException());
-                        }
-                    });
+                        });
 
 
-            //get warning trigger values
+                //get warning trigger values
 
-            db.collection("TriggerValues")
-                    .document("sharedTriggerValues")
-                    .get()
-                    .addOnCompleteListener(task -> {
-                        if (task.isSuccessful()) {
-                            DocumentSnapshot document = task.getResult();
-                            if (document.exists()) {
-                                // Retrieve minTriggerValue
-                                int minTriggerValue = document.getLong("Warning").intValue();
+                db.collection("TriggerValues")
+                        .document("sharedTriggerValues")
+                        .get()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                DocumentSnapshot document = task.getResult();
+                                if (document.exists()) {
+                                    // Retrieve minTriggerValue
+                                    int minTriggerValue = document.getLong("Warning").intValue();
 
-                                // Now you can use minTriggerValue in your sensor check
+                                    // Now you can use minTriggerValue in your sensor check
 
+                                    if (sensorValue >= minTriggerValue && !isWarningShown) {
+                                        showHeartRateWarning();
+                                        storeSensorValueInFirestore(sensorValue);
+                                        isWarningShown = true; // Set the flag to true to indicate that the warning has been shown
+                                        lastWarningTime = System.currentTimeMillis(); // Record the current time
+                                    }
 
-                                if (sensorValue >= minTriggerValue) {
-                                    showHeartRateWarning();
-                                    storeSensorValueInFirestore(sensorValue);
+// Check if it's time to reset the flag
+                                    if (System.currentTimeMillis() - lastWarningTime >= RESET_TIME_INTERVAL) {
+                                        isWarningShown = false; // Reset the flag if 10 minutes have passed since the last warning
+                                    }
+
+                                } else {
+                                    Log.d(TAG, "No such document");
                                 }
                             } else {
-                                Log.d(TAG, "No such document");
+                                Log.d(TAG, "get failed with ", task.getException());
                             }
-                        } else {
-                            Log.d(TAG, "get failed with ", task.getException());
-                        }
-                    });
+                        });
 
-        }
-    };
+            }
+        };
+
 
         private void showSeizureAndFallAlert() {
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("                  Seizure and Fall Alert")
-                    .setMessage("A seizure and fall are detected! Please dismiss this alert.")
-                    .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // Handle dismissal, if needed
-                            dialog.dismiss();
+            if (!isSeizureAndFallAlertShown && MainActivity.this != null) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("                  Seizure and Fall Alert");
+                builder.setMessage("A seizure and fall are detected! Please dismiss this alert.");
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss(); // Dismiss the dialog when OK is clicked
+                    }
+                });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+                // Set the flag to true to indicate that the warning has been shown
+                isSeizureAndFallAlertShown = true;
+
+                // Schedule a handler to dismiss the dialog after 10 seconds
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (alertDialog.isShowing()) {
+                            alertDialog.dismiss();
                         }
-                    })
-                    .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
-                    .show();
+                    }
+                }, 15000); // 10 seconds in milliseconds
+
+            }
         }
+
         private void showSeizure() {
+            if (!isSeizureAlertShown && MainActivity.this != null){
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("                    Seizure")
-                    .setMessage("A seizure is detected! Please dismiss this alert.")
-                    .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // Handle dismissal, if needed
-                            dialog.dismiss();
+            builder.setTitle("                    Seizure");
+            builder.setMessage("A seizure is detected! Please dismiss this alert.");
+                builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss(); // Dismiss the dialog when OK is clicked
+                    }
+                });
+                AlertDialog alertDialog = builder.create();
+                alertDialog.show();
+                // Set the flag to true to indicate that the warning has been shown
+                isSeizureAlertShown = true;
+
+                // Schedule a handler to dismiss the dialog after 10 seconds
+                new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (alertDialog.isShowing()) {
+                            alertDialog.dismiss();
                         }
-                    })
-                    .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
-                    .show();
+                    }
+                }, 15000); // 10 seconds in milliseconds
+
+        }
+            long[] pattern = {0, 200, 200, 200, 200, 200, 200, 200};
+            if (vibrator != null) {
+                vibrator.vibrate(pattern, -1); // 200 milliseconds vibration duration
+            }
         }
 
-        private void  showHeartRateWarning() {
 
-
+    private void showHeartRateWarning() {
+        if (!isWarningShown && MainActivity.this != null) {
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("                    Warning")
-                    .setMessage("Warning: Your heart rate is high. Please sit down or look for a safe place.")
-                    .setPositiveButton("Dismiss", new DialogInterface.OnClickListener() {
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
-                            // Handle dismissal, if needed
-                            dialog.dismiss();
-                        }
-                    })
-                    .setCancelable(false) // This prevents the user from dismissing the alert by tapping outside of it
-                    .show();
+            builder.setTitle("                    WARNING");
+            builder.setMessage("Your heart rate is high. Please seek for a safe place.");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss(); // Dismiss the dialog when OK is clicked
+                }
+            });
+            AlertDialog alertDialog = builder.create();
+            alertDialog.show();
+            // Set the flag to true to indicate that the warning has been shown
+            isWarningShown = true;
+
+            // Schedule a handler to dismiss the dialog after 10 seconds
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (alertDialog.isShowing()) {
+                        alertDialog.dismiss();
+                    }
+                }
+            }, 15000); // 10 seconds in milliseconds
         }
 
+        long[] pattern = {0, 400, 200, 400, 200, 400};
+        if (vibrator != null) {
+            vibrator.vibrate(pattern, -1); // 200 milliseconds vibration duration
+        }
+    }
 
-        private void storeSensorValueInFirestore(float sensorValue) {
+
+
+
+
+
+    private void storeSensorValueInFirestore(float sensorValue) {
             // Create a new data object with sensorValue
             Map<String, Object> data = new HashMap<>();
             data.put("sensorValue", sensorValue);
@@ -505,7 +646,7 @@ public class MainActivity extends AppCompatActivity {
                     .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                         @Override
                         public void onSuccess(DocumentReference documentReference) {
-                            Log.d(TAG, "DocumentSnapshot added with ID: " + documentReference.getId());
+                            Log.d(TAG, "DocumentSnapshot" + documentReference.getId());
 
                             // Stop the execution after successful write
                             // This will prevent any further code from being executed after the write
@@ -525,28 +666,83 @@ public class MainActivity extends AppCompatActivity {
             // If you have additional code that needs to be executed after the write, you can place it within onSuccess.
         }
 
+        /*private float calculateAcceleration(SensorEvent event) {
+            // Calculate acceleration based on sensor data
+            // Replace this with your own calculation based on accelerometer values
+            return 30.0f;
+        }
 
+        private boolean isFallDetected(float acceleration) {
+            // Implement your fall detection logic here
+            // This is a placeholder, replace it with your own fall detection algorithm
+            return acceleration > 1.0f;
+        }*/
 
+    private void addSensorValueToDailyMap(float sensorValue) {
+        // Get current date
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        String currentDate = sdf.format(cal.getTime());
 
-
-
-
-    private float calculateAcceleration(SensorEvent event) {
-        // Calculate acceleration based on sensor data
-        // Replace this with your own calculation based on accelerometer values
-        return 60.0f;
+        // Add sensor value to daily BPM map
+        if (dailyBPMMap.containsKey(currentDate)) {
+            dailyBPMMap.get(currentDate).add(sensorValue);
+        } else {
+            List<Float> bpmList = new ArrayList<>();
+            bpmList.add(sensorValue);
+            dailyBPMMap.put(currentDate, bpmList);
+        }
     }
 
-    private boolean isFallDetected(float acceleration) {
-        // Implement your fall detection logic here
-        // This is a placeholder, replace it with your own fall detection algorithm
-        return acceleration > 10.0f;
+    private void calculateAndStoreDailyAverageBPM() {
+        // Calculate average BPM for each day and store in Firestore
+        for (Map.Entry<String, List<Float>> entry : dailyBPMMap.entrySet()) {
+            String date = entry.getKey();
+            List<Float> bpmList = entry.getValue();
+
+            float sum = 0;
+            for (float bpm : bpmList) {
+                sum += bpm;
+            }
+            final float avgBPM = sum / bpmList.size();
+
+            // Round the average BPM to two decimal points
+            final float roundedAvgBPM = Math.round(avgBPM * 100.0f) / 100.0f;
+
+
+            // Create a timestamp for the day
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+            String timestamp = sdf.format(new Date()) + " UTC";
+
+            // Update the Firestore document with the average BPM and timestamp
+            Map<String, Object> sensorData = new HashMap<>();
+            sensorData.put("Date", date);
+            sensorData.put("AvgBPM", roundedAvgBPM);
+            sensorData.put("Timestamp", timestamp);
+
+            // Store the daily average BPM in Firestore
+            collectionRef.add(sensorData)
+                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                        @Override
+                        public void onSuccess(DocumentReference documentReference) {
+                            Log.d(TAG, "Daily average BPM added to Firestore with ID: " + documentReference.getId());
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.w(TAG, "Error adding daily average BPM to Firestore", e);
+                        }
+                    });
+        }
+    }
+
     }
 
 
 
 
-}
 
 
 
