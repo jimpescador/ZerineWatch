@@ -13,11 +13,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="18660c30-3b68-45be-9732-ecd29b248474" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/SMARTWATCH2/app/libs/samsung-health-service-v1.4.0.jar" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SMARTWATCH2/app/libs/sdk-v1.0.0.jar" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/build.gradle.kts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -25,7 +21,7 @@
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[10.1.1.70:40219]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[adb-336b6756-BB6wj4._adb-tls-connect._tcp]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$/SMARTWATCH2">
       <ProjectState />

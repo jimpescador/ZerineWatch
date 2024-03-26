@@ -99,8 +99,12 @@ public class MainActivity extends AppCompatActivity {
     private AlertDialog heartRateAlertDialog;
     private Vibrator vibrator;
 
-    private static final long RESET_TIME_INTERVAL = 300000; // 10 minutes in milliseconds
+    private static final long RESET_TIME_INTERVAL = 180000; // 3 minutes in milliseconds
+
+    private static final long RESET_TIME_INTERVAL2 = 200000; // 3 minutes in milliseconds
     private long lastWarningTime = 0; // Timestamp of the last warning
+
+    private long lastWarningTime2 = 0; // Timestamp of the last warning
 
     private Handler handler = new Handler();
     private PowerManager.WakeLock wakeLock;
@@ -469,6 +473,7 @@ public class MainActivity extends AppCompatActivity {
                     mTextViewSpo2.setText("96%");
                     updateSpo2ValueInDatabase("96%");
 
+
                 }
                 if (sensorValue >= 101 && sensorValue <= 109) {
                     mTextViewSpo2.setText("95%");
@@ -497,11 +502,13 @@ public class MainActivity extends AppCompatActivity {
                                         // Show seizure alert
                                         showSeizure();
                                         isSeizureAlertShown = true;
+                                        sendData("1");
+                                        lastWarningTime2 = System.currentTimeMillis();
                                     }
-                                    else {
-                                            // Ensure isSeizureAndFallAlertShown is set to false if no fall is detected
-                                            isSeizureAlertShown = false;
-                                        }
+
+                                    if (System.currentTimeMillis() - lastWarningTime2 >= RESET_TIME_INTERVAL2) {
+                                        isSeizureAlertShown = false; // Reset the flag if 10 minutes have passed since the last warning
+                                    }
 
 
                                 } else {
