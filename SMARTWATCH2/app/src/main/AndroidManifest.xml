@@ -32,6 +32,14 @@
         android:roundIcon="@drawable/logo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Design.Light.NoActionBar">
+        <service
+            android:name=".SensorForegroundService"
+            android:foregroundServiceType="location|dataSync|mediaPlayback" />
+
+        <activity android:name=".AlertDialogActivityHeart"
+            android:theme="@style/Theme.AppCompat.Dialog.Alert"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"/>
 
         <activity
             android:name=".FallDetectionService"

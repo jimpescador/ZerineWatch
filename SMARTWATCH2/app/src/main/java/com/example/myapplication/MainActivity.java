@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.IntentFilter;
 
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
 import android.annotation.SuppressLint;
@@ -135,11 +136,11 @@ public class MainActivity extends AppCompatActivity {
 
         startService(new Intent(this, MyForegroundService.class));
 
-
-
-
         Intent serviceIntent = new Intent(this, FallDetectionService.class);
         startService(serviceIntent);
+
+        Intent serviceIntentSensor= new Intent(this, SensorForegroundService.class);
+        ContextCompat.startForegroundService(this, serviceIntentSensor);
 
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -186,6 +187,35 @@ public class MainActivity extends AppCompatActivity {
         firestore = FirebaseFirestore.getInstance();
         collectionRef = firestore.collection("BPM");
 
+        getWarningValue();
+
+    }
+
+    public void getWarningValue(){
+
+        db.collection("TriggerValues")
+                .document("sharedTriggerValues")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            // Retrieve minTriggerValue
+                            int minTriggerValue = document.getLong("Warning").intValue();;
+
+                            // Storing data into SharedPreferences
+                            SharedPreferences sharedPreferences = getSharedPreferences("MySharedPref",MODE_PRIVATE);
+                            SharedPreferences.Editor sharedPref = sharedPreferences.edit();
+                            sharedPref.putInt("warning", minTriggerValue);
+                            sharedPref.commit();
+
+                        } else {
+                            Log.d(TAG, "No such document");
+                        }
+                    } else {
+                        Log.d(TAG, "get failed with ", task.getException());
+                    }
+                });
 
     }
 
@@ -472,8 +502,6 @@ public class MainActivity extends AppCompatActivity {
                 if (sensorValue >= 40 && sensorValue <= 100) {
                     mTextViewSpo2.setText("96%");
                     updateSpo2ValueInDatabase("96%");
-
-
                 }
                 if (sensorValue >= 101 && sensorValue <= 109) {
                     mTextViewSpo2.setText("95%");
@@ -772,7 +800,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Unregister sensor listener
-        sensorManager.unregisterListener(mSensorEventListener);
+        //sensorManager.unregisterListener(mSensorEventListener);
 
     }
 
