@@ -20,13 +20,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="18660c30-3b68-45be-9732-ecd29b248474" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/AlertDialogActivityHeart.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/SensorForegroundService.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/res/raw/sensor_alert.mp3" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/AndroidManifest.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/AlertDialogActivityHeart.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/AlertDialogActivityHeart.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/FallDetectionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/FallDetectionService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/SensorForegroundService.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/SensorForegroundService.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -36,7 +37,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[DeviceId(pluginId=LocalEmulator, isTemplate=false, identifier=path=C:\Users\Adrian\.android\avd\Wear_OS_Large_Round_API_30.avd)]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[10.1.1.98:34229]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$/SMARTWATCH2">
       <ProjectState />
@@ -105,22 +106,22 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Android App.App.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "RunOnceActivity.readMode.enableVisualFormatting": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "com.google.services.firebase.aqiPopupShown": "true",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/Users/Adrian/StudioProjects/GitHub/ZerineWatchWorking/SMARTWATCH2/app/src/main/res/raw"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Android App.App.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Adrian/StudioProjects/GitHub/ZerineWatchWorking/SMARTWATCH2/app/src/main/res/raw&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\Adrian\StudioProjects\GitHub\ZerineWatchWorking\SMARTWATCH2\app\src\main\res\raw" />
@@ -140,7 +141,6 @@
       <option name="ALL_USERS" value="false" />
       <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
       <option name="CLEAR_APP_STORAGE" value="false" />
-      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
       <option name="ACTIVITY_EXTRA_FLAGS" value="" />
       <option name="MODE" value="default_activity" />
       <option name="CLEAR_LOGCAT" value="false" />
@@ -207,7 +207,6 @@
       <option name="ALL_USERS" value="false" />
       <option name="ALWAYS_INSTALL_WITH_PM" value="false" />
       <option name="CLEAR_APP_STORAGE" value="false" />
-      <option name="DYNAMIC_FEATURES_DISABLED_LIST" value="" />
       <option name="ACTIVITY_EXTRA_FLAGS" value="" />
       <option name="MODE" value="default_activity" />
       <option name="CLEAR_LOGCAT" value="false" />

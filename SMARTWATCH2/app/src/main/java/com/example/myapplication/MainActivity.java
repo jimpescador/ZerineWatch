@@ -1,12 +1,16 @@
 package com.example.myapplication;
 
+import static androidx.core.location.LocationManagerCompat.getCurrentLocation;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import android.Manifest;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
@@ -24,6 +28,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.location.LocationRequest;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -51,6 +59,9 @@ import java.util.UUID;
 import android.content.Intent;
 import android.widget.Toast;
 
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.FirebaseApp;
@@ -58,6 +69,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.DocumentSnapshot;
 
@@ -110,6 +122,15 @@ public class MainActivity extends AppCompatActivity {
     private Handler handler = new Handler();
     private PowerManager.WakeLock wakeLock;
     private SensorManager sensorManager;
+
+    private static final int PERMISSION_REQUEST_LOCATION = 101;
+
+    private float highestBPM;
+
+    private FusedLocationProviderClient fusedLocationClient;
+    private double currentLatitude = 0.0;
+    private double currentLongitude = 0.0;
+
 
    private BroadcastReceiver fallDetectionReceiver = new BroadcastReceiver() {
         @Override
@@ -234,8 +255,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showAlert() {
+        // Write fall detection data to Firestore
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        CollectionReference fallDetectionRef = db.collection("fallDetection");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("fallDetected", true);
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        // Add a new document with a random document ID
+        fallDetectionRef
+                .add(data)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "Fall detected data written to Firestore with ID: " + documentReference.getId());
+
+                        // Show alert dialog after writing to Firestore
+                        showAlertDialog();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error writing fall detected data to Firestore", e);
+
+                        // Show alert dialog even if Firestore write fails
+                        showAlertDialog();
+                    }
+                });
+    }
+
+    private void showAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("          Fall Detected")
+        builder.setTitle("Fall Detected")
                 .setMessage("A fall has been detected!")
                 .setPositiveButton("OK", null)
                 .show();
@@ -513,6 +566,7 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 //condition & fetch data for alert trigger
+
                 db.collection("TriggerValues")
                         .document("sharedTriggerValues")
                         .get()
@@ -526,12 +580,37 @@ public class MainActivity extends AppCompatActivity {
                                     // Now you can use minTriggerValue in your sensor check
 
                                     if (sensorValue >= Alert && !isSeizureAlertShown) {
-
+                                        sendData("1");
                                         // Show seizure alert
                                         showSeizure();
                                         isSeizureAlertShown = true;
-                                        sendData("1");
+
                                         lastWarningTime2 = System.currentTimeMillis();
+                                        Map<String, Object> seizureData = new HashMap<>();
+                                        seizureData.put("timestamp", FieldValue.serverTimestamp());
+                                        seizureData.put("highestBPM", sensorValue);
+
+                                        // Add the document to Firestore
+                                        db.collection("SeizureRecords")
+                                                .add(seizureData)
+                                                .addOnSuccessListener(documentReference -> {
+                                                    Log.d(TAG, "Seizure record added with ID: " + documentReference.getId());
+                                                })
+                                                .addOnFailureListener(e -> {
+                                                    Log.w(TAG, "Error adding seizure record", e);
+                                                });
+                                        // Add the document to Firestore
+
+
+
+
+                                        highestBPM = Alert;
+
+                                        if (sensorValue > highestBPM) {
+                                            highestBPM = sensorValue;
+                                        }
+
+
                                     }
 
                                     if (System.currentTimeMillis() - lastWarningTime2 >= RESET_TIME_INTERVAL2) {
@@ -790,6 +869,75 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+    private void getLocation() {
+        Log.d(TAG, "Requesting location updates...");
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LocationListener locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                // Update latitude and longitude when location changes
+                double latitude = location.getLatitude();
+                double longitude = location.getLongitude();
+                Log.d(TAG, "Location changed: Lat=" + latitude + " Lon=" + longitude);
+                // Now you can use latitude and longitude to record the location to Firestore
+                recordLocationToFirestore(latitude, longitude);
+            }
+
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+                Log.d(TAG, "Location provider status changed: Provider=" + provider + " Status=" + status);
+            }
+
+            @Override
+            public void onProviderEnabled(String provider) {
+                Log.d(TAG, "Location provider enabled: " + provider);
+            }
+
+            @Override
+            public void onProviderDisabled(String provider) {
+                Log.d(TAG, "Location provider disabled: " + provider);
+            }
+        };
+
+        // Request location updates
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
+        } else {
+            Log.e(TAG, "Location permission not granted");
+        }
+    }
+
+    // Function to record location data to Firestore
+    private void recordLocationToFirestore(double latitude, double longitude) {
+        Log.d(TAG, "Recording location to Firestore: Lat=" + latitude + " Lon=" + longitude);
+
+        double formattedHighestBPM = Math.round(highestBPM * 10.0) / 10.0;
+        Log.d(TAG, "Formatted highest BPM: " + formattedHighestBPM);
+
+        // Create a new document in the "SeizureRec" collection
+        Map<String, Object> record = new HashMap<>();
+        record.put("timestamp", FieldValue.serverTimestamp()); // Server timestamp
+        record.put("highest_bpm", formattedHighestBPM);
+        record.put("latitude", latitude);
+        record.put("longitude", longitude);
+
+        // Add the document to Firestore
+        db.collection("SeizureRec")
+                .add(record)
+                .addOnSuccessListener(documentReference -> {
+                    Log.d(TAG, "Seizure record added with ID: " + documentReference.getId());
+                })
+                .addOnFailureListener(e -> {
+                    Log.e(TAG, "Error adding seizure record to Firestore", e);
+                });
+    }
+
+
+
+
+
     @Override
     protected void onDestroy() {
         super.onDestroy();

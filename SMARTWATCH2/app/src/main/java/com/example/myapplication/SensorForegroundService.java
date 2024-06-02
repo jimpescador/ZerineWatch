@@ -16,8 +16,15 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.util.Log;
+import android.view.WindowManager;
+
 
 import androidx.core.app.NotificationCompat;
+
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import android.content.pm.PackageManager;
 
 public class SensorForegroundService extends Service implements SensorEventListener {
     private static final int NOTIFICATION_ID = 128;
@@ -29,6 +36,10 @@ public class SensorForegroundService extends Service implements SensorEventListe
     private Handler handler;
     private boolean isCooldown;
     private int warningValue;
+    private boolean isSeizureAlertShown = false;
+
+    private FirebaseFirestore db;
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -48,6 +59,8 @@ public class SensorForegroundService extends Service implements SensorEventListe
                 Log.e("Sensor Service", "Heart rate sensor not available");
             }
         }
+
+        db = FirebaseFirestore.getInstance();
         // Acquire a wake lock to keep the CPU running
         PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
@@ -63,14 +76,11 @@ public class SensorForegroundService extends Service implements SensorEventListe
 
 
         // Create a notification for the foreground service
-        Notification notification = new NotificationCompat.Builder(this, "CHANNEL_ID")
-                .setContentTitle("Sensor Service")
-                .setContentText("Monitoring sensor changes")
-                .setSmallIcon(R.drawable.logo)
-                .build();
+        Notification notification = createNotification();
+
 
         // Start the service in the foreground
-        startForeground(1, notification);
+        startForeground(NOTIFICATION_ID, notification);
     }
 
     private void startCooldown() {
@@ -144,24 +154,74 @@ public class SensorForegroundService extends Service implements SensorEventListe
             float heartRate = event.values[0];
             Log.e("Sensor Service", "Heart Rate: " + heartRate + " / " + warningValue);
             // You can update UI or store the value as needed
-            if(heartRate >= warningValue){
-                showAlert();
-            }
+            db.collection("TriggerValues")
+                    .document("sharedTriggerValues")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            if (document.exists()) {
+                                // Retrieve minTriggerValue
+                                int Alert = document.getLong("Alert").intValue();
+
+                                // Now you can use minTriggerValue in your sensor check
+
+                                if (heartRate >= Alert) {
+                                    PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+                                    PowerManager.WakeLock screenWakeLock = powerManager.newWakeLock(
+                                            PowerManager.SCREEN_BRIGHT_WAKE_LOCK |
+                                                    PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                                            "MyApp::ScreenWakeLockTag"
+                                    );
+                                    screenWakeLock.acquire(60 * 1000L); // 1 minute
+                                    handler.postDelayed(screenWakeLock::release, 60 * 1000L);
+
+                                    // Show seizure alert
+                                    //showAlert();
+                                }
+                            }
+                        }
+                    });
+
+            db.collection("TriggerValues")
+                    .document("sharedTriggerValues")
+                    .get()
+                    .addOnCompleteListener(task -> {
+                        if (task.isSuccessful()) {
+                            DocumentSnapshot document = task.getResult();
+                            if (document.exists()) {
+                                // Retrieve minTriggerValue
+                                int minTriggerValue = document.getLong("Warning").intValue();
+
+                                // Now you can use minTriggerValue in your sensor check
+
+                                if (heartRate >= minTriggerValue) {
+                                    PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+                                    PowerManager.WakeLock screenWakeLock = powerManager.newWakeLock(
+                                            PowerManager.SCREEN_BRIGHT_WAKE_LOCK |
+                                                    PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                                            "MyApp::ScreenWakeLockTag"
+                                    );
+                                    screenWakeLock.acquire(60 * 1000L); // 1 minute
+                                    handler.postDelayed(screenWakeLock::release, 60 * 1000L);
+
+                                }
+
+                            }
+
+                        }
+                    });
+
         }
     }
+
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Implement this method if needed
+        // Handle accuracy changes here if needed
     }
 
-    private void showAlert() {
-        if (!isCooldown) {
-            // Since we cannot show a dialog directly from a service, we'll use an activity
-            Intent dialogIntent = new Intent(this, AlertDialogActivityHeart.class);
-            dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(dialogIntent);
-            startCooldown();
-        }
-    }
 }
+
+
+

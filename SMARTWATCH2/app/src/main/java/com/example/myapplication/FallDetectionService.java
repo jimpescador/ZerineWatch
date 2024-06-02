@@ -1,5 +1,7 @@
 package com.example.myapplication;
 
+import static android.content.ContentValues.TAG;
+
 import android.app.Service;
 import android.content.Intent;
 import android.hardware.Sensor;
@@ -7,7 +9,19 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.IBinder;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class FallDetectionService extends Service {
 
@@ -78,8 +92,31 @@ public class FallDetectionService extends Service {
     }
 
     private void handleFallDetected() {
+        // Write "1" to a specific document in Firebase Firestore
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference docRef = db.collection("fallDetection").document("fallDetected");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("fallDetected", 1);
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        docRef.set(data)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "Fall detected data written to Firestore");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error writing fall detected data to Firestore", e);
+                    }
+                });
+
         // Broadcast that fall is detected
         Intent intent = new Intent("FALL_DETECTED");
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
+
 }
