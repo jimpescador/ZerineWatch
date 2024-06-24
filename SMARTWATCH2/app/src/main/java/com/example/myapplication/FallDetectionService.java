@@ -88,7 +88,7 @@ public class FallDetectionService extends Service {
     private boolean isFallDetected(float acceleration) {
         // Implement fall detection logic based on acceleration values
         // For simplicity, a threshold value is used here. In a real-world scenario, a more sophisticated algorithm would be needed.
-        return acceleration > 50.0f;
+        return acceleration > 70.0f;
     }
 
     private void handleFallDetected() {

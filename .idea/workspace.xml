@@ -20,14 +20,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="18660c30-3b68-45be-9732-ecd29b248474" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/gradle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/gradle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetDropDown.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/AndroidManifest.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/AlertDialogActivityHeart.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/AlertDialogActivityHeart.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/FallDetectionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/FallDetectionService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/SensorForegroundService.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/SensorForegroundService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MyBackgroundService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MyForegroundService.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -37,7 +35,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[10.1.1.98:34229]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[C:\Users\11jim\.android\avd\Pixel_3a_API_34_extension_level_7_x86_64.avd]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$/SMARTWATCH2">
       <ProjectState />
@@ -88,6 +86,12 @@
       </list>
     </option>
   </component>
+  <component name="GenerateSignedApkSettings">
+    <option name="KEY_STORE_PATH" value="D:\11jim\Desktop\4thyear\CAPSTONE\Apk\ZerineWatch.jks" />
+    <option name="KEY_ALIAS" value="key0" />
+    <option name="REMEMBER_PASSWORDS" value="true" />
+    <option name="BUILD_TARGET_KEY" value="apk" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -109,6 +113,8 @@
   <component name="PropertiesComponent">{
   &quot;keyToString&quot;: {
     &quot;Android App.App.executor&quot;: &quot;Run&quot;,
+    &quot;ApkExportedModule&quot;: &quot;My_Application.app&quot;,
+    &quot;ExportApk.ApkPathForMy_Application.app&quot;: &quot;D:\\11jim\\Desktop\\4thyear\\CAPSTONE\\App\\ZerineWatch\\SMARTWATCH2\\app&quot;,
     &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
@@ -120,6 +126,11 @@
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;C:/Users/Adrian/StudioProjects/GitHub/ZerineWatchWorking/SMARTWATCH2/app/src/main/res/raw&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;ExportApk.BuildVariants&quot;: [
+      &quot;debug&quot;
+    ]
   }
 }</component>
   <component name="RecentsManager">

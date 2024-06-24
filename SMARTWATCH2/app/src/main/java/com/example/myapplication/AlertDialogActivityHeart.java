@@ -30,6 +30,7 @@ import java.util.UUID;
 public class AlertDialogActivityHeart extends Activity {
     private Vibrator vibrator;
     private MediaPlayer mediaPlayer;
+    private MediaPlayer lowplayer;
     private static final String TODO = "";
 
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");

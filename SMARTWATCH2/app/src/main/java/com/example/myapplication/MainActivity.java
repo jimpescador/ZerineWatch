@@ -32,6 +32,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationRequest;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -86,6 +87,10 @@ public class MainActivity extends AppCompatActivity {
     private DatabaseReference myRef;
     private DatabaseReference myRef2;
 
+    private MediaPlayer mediaPlayer;
+
+    private MediaPlayer lowplayer;
+
 
     private static final int REQUEST_CODE_PERMISSION = 100;
     private static final String TODO = "";
@@ -135,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
    private BroadcastReceiver fallDetectionReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            // Show alert dialog here
+            // A alert dialog here
             showAlert();
         }
     };
@@ -152,11 +157,6 @@ public class MainActivity extends AppCompatActivity {
 
         FirebaseApp.initializeApp(this);
 
-        Intent serviceIntent1 = new Intent(this, MyBackgroundService.class);
-        startService(serviceIntent1);
-
-        startService(new Intent(this, MyForegroundService.class));
-
         Intent serviceIntent = new Intent(this, FallDetectionService.class);
         startService(serviceIntent);
 
@@ -169,6 +169,8 @@ public class MainActivity extends AppCompatActivity {
         mTextView = (TextView) findViewById(R.id.BPM_Value);
         mTextViewSpo2 = (TextView) findViewById(R.id.SPO2_Value);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        mediaPlayer = MediaPlayer.create(this, R.raw.sensor_alert);
+        lowplayer = MediaPlayer.create(this, R.raw.Low_alert);
 
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakeLockTag");
@@ -256,6 +258,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void showAlert() {
         // Write fall detection data to Firestore
+        sendData("2");
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         CollectionReference fallDetectionRef = db.collection("fallDetection");
 
@@ -576,10 +580,11 @@ public class MainActivity extends AppCompatActivity {
                                 if (document.exists()) {
                                     // Retrieve minTriggerValue
                                     int Alert = document.getLong("Alert").intValue();
+                                    int lowAlert =document.getLong("Alert_Low").intValue();
 
                                     // Now you can use minTriggerValue in your sensor check
 
-                                    if (sensorValue >= Alert && !isSeizureAlertShown) {
+                                    if (sensorValue >= Alert && sensorValue <= lowAlert && !isSeizureAlertShown) {
                                         sendData("1");
                                         // Show seizure alert
                                         showSeizure();
@@ -639,11 +644,19 @@ public class MainActivity extends AppCompatActivity {
                                 if (document.exists()) {
                                     // Retrieve minTriggerValue
                                     int minTriggerValue = document.getLong("Warning").intValue();
+                                    int lowTriggerValue = document.getLong("Warning_Low").intValue();
 
                                     // Now you can use minTriggerValue in your sensor check
 
-                                    if (sensorValue >= minTriggerValue && !isWarningShown) {
+                                    if (sensorValue >= minTriggerValue && sensorValue <= lowTriggerValue && !isWarningShown) {
                                         showHeartRateWarning();
+                                        storeSensorValueInFirestore(sensorValue);
+                                        isWarningShown = true; // Set the flag to true to indicate that the warning has been shown
+                                        lastWarningTime = System.currentTimeMillis(); // Record the current time
+                                    }
+
+                                    if (sensorValue <= lowTriggerValue && !isWarningShown) {
+                                        showLowHeartRateWarning();
                                         storeSensorValueInFirestore(sensorValue);
                                         isWarningShown = true; // Set the flag to true to indicate that the warning has been shown
                                         lastWarningTime = System.currentTimeMillis(); // Record the current time
@@ -731,6 +744,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showHeartRateWarning() {
         if (!isWarningShown && MainActivity.this != null) {
+            playMusic();
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("                    WARNING");
             builder.setMessage("Your heart rate is high. Please seek for a safe place.");
@@ -738,6 +752,64 @@ public class MainActivity extends AppCompatActivity {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
                     dialog.dismiss(); // Dismiss the dialog when OK is clicked
+                    if (mediaPlayer != null) {
+                        mediaPlayer.release();
+                        mediaPlayer = null;
+                    }
+                    finish();
+
+                }
+            });
+            AlertDialog alertDialog = builder.create();
+            alertDialog.show();
+            // Set the flag to true to indicate that the warning has been shown
+            isWarningShown = true;
+
+            // Schedule a handler to dismiss the dialog after 10 seconds
+            new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (alertDialog.isShowing()) {
+                        alertDialog.dismiss();
+                    }
+                }
+            }, 15000); // 10 seconds in milliseconds
+        }
+
+        long[] pattern = {0, 400, 200, 400, 200, 400};
+        if (vibrator != null) {
+            vibrator.vibrate(pattern, -1); // 200 milliseconds vibration duration
+        }
+    }
+
+    private void playMusic() {
+        if (mediaPlayer != null) {
+            mediaPlayer.setVolume(1.0f, 1.0f);
+            mediaPlayer.start();
+        }
+    }
+    private void playMusic2() {
+        if (lowplayer != null) {
+            lowplayer.setVolume(1.0f, 1.0f);
+            lowplayer.start();
+        }
+    }
+
+    private void showLowHeartRateWarning() {
+        if (!isWarningShown && MainActivity.this != null) {
+            playMusic2();
+            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+            builder.setTitle("                    WARNING");
+            builder.setMessage("Your heart rate is low. Please seek for a safe place.");
+            builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss(); // Dismiss the dialog when OK is clicked
+                    if (lowplayer != null) {
+                        lowplayer.release();
+                        lowplayer = null;
+                    }
+                    finish();
                 }
             });
             AlertDialog alertDialog = builder.create();
