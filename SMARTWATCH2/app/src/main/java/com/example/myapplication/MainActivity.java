@@ -683,7 +683,7 @@ public class MainActivity extends AppCompatActivity {
             if (!isSeizureAndFallAlertShown && MainActivity.this != null) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 builder.setTitle("                  Seizure and Fall Alert");
-                builder.setMessage("A seizure and fall are detected! Please dismiss this alert.");
+                builder.setMessage("A possible seizure and fall are detected! Please dismiss this alert.");
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -712,7 +712,7 @@ public class MainActivity extends AppCompatActivity {
             if (!isSeizureAlertShown && MainActivity.this != null){
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("                    Seizure");
-            builder.setMessage("A seizure is detected! Please dismiss this alert.");
+            builder.setMessage("A possible seizure is detected! Please dismiss this alert.");
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
