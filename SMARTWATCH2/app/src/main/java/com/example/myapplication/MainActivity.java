@@ -170,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
         mTextViewSpo2 = (TextView) findViewById(R.id.SPO2_Value);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         mediaPlayer = MediaPlayer.create(this, R.raw.sensor_alert);
-        lowplayer = MediaPlayer.create(this, R.raw.Low_alert);
+        lowplayer = MediaPlayer.create(this, R.raw.low_alert);
 
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakeLockTag");
