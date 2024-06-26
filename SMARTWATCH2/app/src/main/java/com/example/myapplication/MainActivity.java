@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity {
     private MediaPlayer mediaPlayer;
 
     private MediaPlayer lowplayer;
+    private MediaPlayer alertplayer;
 
 
     private static final int REQUEST_CODE_PERMISSION = 100;
@@ -171,6 +172,7 @@ public class MainActivity extends AppCompatActivity {
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         mediaPlayer = MediaPlayer.create(this, R.raw.sensor_alert);
         lowplayer = MediaPlayer.create(this, R.raw.low_alert);
+        alertplayer = MediaPlayer.create(this, R.raw.seizure_detected_remain_calm);
 
         PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
         wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyApp::MyWakeLockTag");
@@ -584,7 +586,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     // Now you can use minTriggerValue in your sensor check
 
-                                    if (sensorValue >= Alert && sensorValue <= lowAlert && !isSeizureAlertShown) {
+                                    if ((sensorValue >= Alert && !isSeizureAlertShown) || (sensorValue <= lowAlert && !isSeizureAlertShown)) {
                                         sendData("1");
                                         // Show seizure alert
                                         showSeizure();
@@ -648,7 +650,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     // Now you can use minTriggerValue in your sensor check
 
-                                    if (sensorValue >= minTriggerValue && sensorValue <= lowTriggerValue && !isWarningShown) {
+                                    if (sensorValue >= minTriggerValue && !isWarningShown) {
                                         showHeartRateWarning();
                                         storeSensorValueInFirestore(sensorValue);
                                         isWarningShown = true; // Set the flag to true to indicate that the warning has been shown
@@ -683,7 +685,7 @@ public class MainActivity extends AppCompatActivity {
             if (!isSeizureAndFallAlertShown && MainActivity.this != null) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 builder.setTitle("                  Seizure and Fall Alert");
-                builder.setMessage("A possible seizure and fall are detected! Please dismiss this alert.");
+                builder.setMessage("A possible seizure and fall are detected!");
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -710,13 +712,20 @@ public class MainActivity extends AppCompatActivity {
 
         private void showSeizure() {
             if (!isSeizureAlertShown && MainActivity.this != null){
-            AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-            builder.setTitle("                    Seizure");
-            builder.setMessage("A possible seizure is detected! Please dismiss this alert.");
+                playMusic3();
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+                builder.setTitle("                    Seizure");
+                builder.setMessage("A possible seizure is detected! Remain calm, Take a rest\n");
                 builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         dialog.dismiss(); // Dismiss the dialog when OK is clicked
+                        if (alertplayer != null)
+                        {
+                            alertplayer.release();
+                            alertplayer = null;
+                        }
+
                     }
                 });
                 AlertDialog alertDialog = builder.create();
@@ -732,7 +741,7 @@ public class MainActivity extends AppCompatActivity {
                             alertDialog.dismiss();
                         }
                     }
-                }, 15000); // 10 seconds in milliseconds
+                }, 60000); // 60 seconds in milliseconds
 
         }
             long[] pattern = {0, 200, 200, 200, 200, 200, 200, 200};
@@ -756,7 +765,6 @@ public class MainActivity extends AppCompatActivity {
                         mediaPlayer.release();
                         mediaPlayer = null;
                     }
-                    finish();
 
                 }
             });
@@ -773,7 +781,7 @@ public class MainActivity extends AppCompatActivity {
                         alertDialog.dismiss();
                     }
                 }
-            }, 15000); // 10 seconds in milliseconds
+            }, 30000); // 10 seconds in milliseconds
         }
 
         long[] pattern = {0, 400, 200, 400, 200, 400};
@@ -795,12 +803,22 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void playMusic3(){
+            if (alertplayer != null) {
+                float maxVolume = 15.0f;
+                float volume = maxVolume / 15.0f; // Adjusted volume ratio
+
+                alertplayer.setVolume(volume, volume);
+                alertplayer.start();
+            }
+    }
+
     private void showLowHeartRateWarning() {
         if (!isWarningShown && MainActivity.this != null) {
             playMusic2();
             AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
             builder.setTitle("                    WARNING");
-            builder.setMessage("Your heart rate is low. Please seek for a safe place.");
+            builder.setMessage("Your heart rate is low. Please seek for a safe place");
             builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
@@ -809,7 +827,7 @@ public class MainActivity extends AppCompatActivity {
                         lowplayer.release();
                         lowplayer = null;
                     }
-                    finish();
+
                 }
             });
             AlertDialog alertDialog = builder.create();
@@ -825,7 +843,7 @@ public class MainActivity extends AppCompatActivity {
                         alertDialog.dismiss();
                     }
                 }
-            }, 15000); // 10 seconds in milliseconds
+            }, 30000); // 10 seconds in milliseconds
         }
 
         long[] pattern = {0, 400, 200, 400, 200, 400};
