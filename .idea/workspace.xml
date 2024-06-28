@@ -20,12 +20,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="18660c30-3b68-45be-9732-ecd29b248474" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/deploymentTargetDropDown.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/FallDetectionService.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/FallDetectionService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" beforeDir="false" afterPath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MainActivity.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MyBackgroundService.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SMARTWATCH2/app/src/main/java/com/example/myapplication/MyForegroundService.java" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -35,7 +31,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[C:\Users\11jim\.android\avd\Pixel_3a_API_34_extension_level_7_x86_64.avd]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[10.1.1.125:33179]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$/SMARTWATCH2">
       <ProjectState />
@@ -138,6 +134,7 @@
       <recent name="C:\Users\Adrian\StudioProjects\GitHub\ZerineWatchWorking\SMARTWATCH2\app\src\main\res\raw" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="D:\11jim\Desktop\4thyear\CAPSTONE\App\ZerineWatch\SMARTWATCH2\app\src\main\res\raw" />
       <recent name="D:\11jim\Desktop\4thyear\CAPSTONE\App\ZerineWatch\SMARTWATCH2\app\libs" />
     </key>
   </component>

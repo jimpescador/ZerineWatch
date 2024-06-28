@@ -571,9 +571,11 @@ public class MainActivity extends AppCompatActivity {
                     updateSpo2ValueInDatabase("93%");
                 }
 
+                fetchTriggerValuesAndHandleAlerts();
+
                 //condition & fetch data for alert trigger
 
-                db.collection("TriggerValues")
+                /*db.collection("TriggerValues")
                         .document("sharedTriggerValues")
                         .get()
                         .addOnCompleteListener(task -> {
@@ -675,10 +677,80 @@ public class MainActivity extends AppCompatActivity {
                             } else {
                                 Log.d(TAG, "get failed with ", task.getException());
                             }
-                        });
+                        });*/
 
             }
         };
+
+
+
+    private void fetchTriggerValuesAndHandleAlerts() {
+        db.collection("TriggerValues")
+                .document("sharedTriggerValues")
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document.exists()) {
+                            int alertValue = document.getLong("Alert").intValue();
+                            int alertLowValue = document.getLong("Alert_Low").intValue();
+                            int warningValue = document.getLong("Warning").intValue();
+                            int warningLowValue = document.getLong("Warning_Low").intValue();
+
+                            handleSeizureAlert(alertValue, alertLowValue);
+                            handleWarningAlert(warningValue, warningLowValue);
+                        } else {
+                            Log.d(TAG, "No such document");
+                        }
+                    } else {
+                        Log.d(TAG, "get failed with ", task.getException());
+                    }
+                });
+    }
+
+    // Function to handle seizure alerts
+    private void handleSeizureAlert(int alertValue, int alertLowValue) {
+        if ((sensorValue >= alertValue || sensorValue >= alertLowValue) && !isSeizureAlertShown) {
+            sendData("1");
+            showSeizure();
+            isSeizureAlertShown = true;
+            lastWarningTime2 = System.currentTimeMillis();
+
+            Map<String, Object> seizureData = new HashMap<>();
+            seizureData.put("timestamp", FieldValue.serverTimestamp());
+            seizureData.put("highestBPM", sensorValue);
+
+            db.collection("SeizureRecords")
+                    .add(seizureData)
+                    .addOnSuccessListener(documentReference -> Log.d(TAG, "Seizure record added with ID: " + documentReference.getId()))
+                    .addOnFailureListener(e -> Log.w(TAG, "Error adding seizure record", e));
+
+            highestBPM = Math.max(highestBPM, sensorValue);
+        }
+
+        if (System.currentTimeMillis() - lastWarningTime2 >= RESET_TIME_INTERVAL2) {
+            isSeizureAlertShown = false;
+        }
+    }
+
+    // Function to handle warning alerts
+    private void handleWarningAlert(int warningValue, int warningLowValue) {
+        if (sensorValue >= warningValue  && !isWarningShown) {
+            showHeartRateWarning();
+            storeSensorValueInFirestore(sensorValue);
+            isWarningShown = true;
+            lastWarningTime = System.currentTimeMillis();
+        } else if (sensorValue <= warningLowValue && !isWarningShown) {
+            showLowHeartRateWarning();
+            storeSensorValueInFirestore(sensorValue);
+            isWarningShown = true;
+            lastWarningTime = System.currentTimeMillis();
+        }
+
+        if (System.currentTimeMillis() - lastWarningTime >= RESET_TIME_INTERVAL) {
+            isWarningShown = false;
+        }
+    }
 
 
         private void showSeizureAndFallAlert() {
