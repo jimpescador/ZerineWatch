@@ -571,11 +571,11 @@ public class MainActivity extends AppCompatActivity {
                     updateSpo2ValueInDatabase("93%");
                 }
 
-                fetchTriggerValuesAndHandleAlerts();
+                //fetchTriggerValuesAndHandleAlerts();
 
                 //condition & fetch data for alert trigger
 
-                /*db.collection("TriggerValues")
+                db.collection("TriggerValues")
                         .document("sharedTriggerValues")
                         .get()
                         .addOnCompleteListener(task -> {
@@ -659,12 +659,6 @@ public class MainActivity extends AppCompatActivity {
                                         lastWarningTime = System.currentTimeMillis(); // Record the current time
                                     }
 
-                                    if (sensorValue <= lowTriggerValue && !isWarningShown) {
-                                        showLowHeartRateWarning();
-                                        storeSensorValueInFirestore(sensorValue);
-                                        isWarningShown = true; // Set the flag to true to indicate that the warning has been shown
-                                        lastWarningTime = System.currentTimeMillis(); // Record the current time
-                                    }
 
 // Check if it's time to reset the flag
                                     if (System.currentTimeMillis() - lastWarningTime >= RESET_TIME_INTERVAL) {
@@ -677,14 +671,14 @@ public class MainActivity extends AppCompatActivity {
                             } else {
                                 Log.d(TAG, "get failed with ", task.getException());
                             }
-                        });*/
+                        });
 
             }
         };
 
 
 
-    private void fetchTriggerValuesAndHandleAlerts() {
+    /*private void fetchTriggerValuesAndHandleAlerts() {
         db.collection("TriggerValues")
                 .document("sharedTriggerValues")
                 .get()
@@ -706,7 +700,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d(TAG, "get failed with ", task.getException());
                     }
                 });
-    }
+    }*/
 
     // Function to handle seizure alerts
     private void handleSeizureAlert(int alertValue, int alertLowValue) {
@@ -740,12 +734,12 @@ public class MainActivity extends AppCompatActivity {
             storeSensorValueInFirestore(sensorValue);
             isWarningShown = true;
             lastWarningTime = System.currentTimeMillis();
-        } else if (sensorValue <= warningLowValue && !isWarningShown) {
+        } /*else if ((sensorValue <= warningLowValue && sensorValue > 0) && !isWarningShown) {
             showLowHeartRateWarning();
             storeSensorValueInFirestore(sensorValue);
             isWarningShown = true;
             lastWarningTime = System.currentTimeMillis();
-        }
+        }*/
 
         if (System.currentTimeMillis() - lastWarningTime >= RESET_TIME_INTERVAL) {
             isWarningShown = false;
