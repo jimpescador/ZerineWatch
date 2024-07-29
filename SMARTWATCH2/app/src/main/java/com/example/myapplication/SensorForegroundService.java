@@ -152,7 +152,7 @@ public class SensorForegroundService extends Service implements SensorEventListe
 
         if (event.sensor.getType() == Sensor.TYPE_HEART_RATE) {
             float heartRate = event.values[0];
-            Log.e("Sensor Service", "Heart Rate: " + heartRate + " / " + warningValue);
+            //Log.e("Sensor Service", "Heart Rate: " + heartRate + " / " + warningValue);
             // You can update UI or store the value as needed
             db.collection("TriggerValues")
                     .document("sharedTriggerValues")

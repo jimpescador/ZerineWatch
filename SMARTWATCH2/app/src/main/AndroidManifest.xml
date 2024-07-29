@@ -51,7 +51,7 @@
             android:enabled="true"
             android:exported="false" />
 
-        <service android:name=".MyForegroundService"/>
+        <service android:name=".ConvulsionDetectionService" />
 
         <activity
             android:name=".MainActivity"

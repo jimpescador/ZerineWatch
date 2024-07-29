@@ -21,25 +21,14 @@
         android:textSize="15sp" />
 
     <ImageView
-        android:id="@+id/imageView3"
-        android:layout_width="55dp"
-        android:layout_height="55dp"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="101dp"
-        android:layout_marginEnd="16dp"
-        android:src="@drawable/cloud" />
-
-    <ImageView
         android:id="@+id/imageView"
         android:layout_width="wrap_content"
         android:layout_height="54dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_centerInParent="true"
-        android:layout_marginTop="100dp"
-        android:layout_marginEnd="107dp"
+        android:layout_marginTop="129dp"
+        android:layout_marginEnd="-3dp"
         android:src="@drawable/heart" />
 
     <TextView
@@ -49,21 +38,9 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_centerInParent="true"
-        android:layout_marginTop="147dp"
-        android:layout_marginEnd="140dp"
+        android:layout_marginTop="177dp"
+        android:layout_marginEnd="85dp"
         android:text="BPM"
-        android:textColor="#FFFFFF" />
-
-    <TextView
-        android:id="@+id/SpO2"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="150dp"
-        android:layout_marginEnd="30dp"
-        android:text="SPO2"
         android:textColor="#FFFFFF" />
 
     <TextView
@@ -73,21 +50,8 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_centerInParent="true"
-        android:layout_marginTop="117dp"
-        android:layout_marginEnd="142dp"
-        android:text="-"
-        android:textColor="#000000"
-        android:textStyle="bold" />
-
-    <TextView
-        android:id="@+id/SPO2_Value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:layout_centerInParent="true"
-        android:layout_marginTop="122dp"
-        android:layout_marginEnd="36dp"
+        android:layout_marginTop="145dp"
+        android:layout_marginEnd="86dp"
         android:text="-"
         android:textColor="#000000"
         android:textStyle="bold" />
@@ -112,8 +76,8 @@
         android:layout_alignParentEnd="true"
 
         android:layout_centerInParent="true"
-        android:layout_marginTop="31dp"
-        android:layout_marginEnd="58dp"
+        android:layout_marginTop="23dp"
+        android:layout_marginEnd="67dp"
         android:text="-"
         android:textAllCaps="true"
         android:textColor="#FFFFFF"

@@ -81,7 +81,8 @@ public class MainActivity extends AppCompatActivity {
     private Sensor offBodySensor;
     private TextView mTextView;
 
-    private TextView mTextViewSpo2;
+    //private TextView mTextViewSpo2;
+
     private float sensorValue;
 
     private DatabaseReference myRef;
@@ -137,6 +138,13 @@ public class MainActivity extends AppCompatActivity {
     private double currentLatitude = 0.0;
     private double currentLongitude = 0.0;
 
+    private BroadcastReceiver convulsionReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            showConvulsionAlert();
+        }
+    };
+
 
    private BroadcastReceiver fallDetectionReceiver = new BroadcastReceiver() {
         @Override
@@ -164,11 +172,14 @@ public class MainActivity extends AppCompatActivity {
         Intent serviceIntentSensor= new Intent(this, SensorForegroundService.class);
         ContextCompat.startForegroundService(this, serviceIntentSensor);
 
+        Intent intent = new Intent(this, ConvulsionDetectionService.class);
+        startService(intent);
+
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mHeartSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
         mTextView = (TextView) findViewById(R.id.BPM_Value);
-        mTextViewSpo2 = (TextView) findViewById(R.id.SPO2_Value);
+        //mTextViewSpo2 = (TextView) findViewById(R.id.SPO2_Value);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         mediaPlayer = MediaPlayer.create(this, R.raw.sensor_alert);
         lowplayer = MediaPlayer.create(this, R.raw.low_alert);
@@ -214,6 +225,8 @@ public class MainActivity extends AppCompatActivity {
 
         getWarningValue();
 
+
+
     }
 
     public void getWarningValue(){
@@ -250,12 +263,16 @@ public class MainActivity extends AppCompatActivity {
         IntentFilter filter = new IntentFilter("FALL_DETECTED");
         LocalBroadcastManager.getInstance(this).registerReceiver(fallDetectionReceiver, filter);
 
+        IntentFilter filter2 = new IntentFilter("CONVULSION_DETECTED");
+        LocalBroadcastManager.getInstance(this).registerReceiver(convulsionReceiver, filter2);
+
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(fallDetectionReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(convulsionReceiver);
     }
 
     private void showAlert() {
@@ -292,12 +309,63 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
+    private void showConvulsionAlert() {
+        // Write fall detection data to Firestore
+        //sendData("3");
+
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        CollectionReference fallDetectionRef = db.collection("convulsion");
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("Convulsion", true);
+        data.put("timestamp", FieldValue.serverTimestamp());
+
+        // Add a new document with a random document ID
+        fallDetectionRef
+                .add(data)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.d(TAG, "Convulsion detected data written to Firestore with ID: " + documentReference.getId());
+
+                        // Show alert dialog after writing to Firestore
+                        showC();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "Error writing fall detected data to Firestore", e);
+
+                        // Show alert dialog even if Firestore write fails
+                        showC();
+                    }
+                });
+    }
+
     private void showAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Fall Detected")
+        builder.setTitle("                  Fall Detected")
                 .setMessage("A fall has been detected!")
                 .setPositiveButton("OK", null)
                 .show();
+        long[] pattern = {0, 500, 500, 200, 200, 500, 500, 50};
+        if (vibrator != null) {
+            vibrator.vibrate(pattern, -1); // 200 milliseconds vibration duration
+        }
+    }
+
+    private void showC() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("           Convulsion Detected")
+                .setMessage("Convulsion has been detected!")
+                .setPositiveButton("OK", null)
+                .show();
+
+        long[] pattern = {0, 200, 200, 200, 200, 200, 200, 200};
+        if (vibrator != null) {
+            vibrator.vibrate(pattern, -1); // 200 milliseconds vibration duration
+        }
     }
 
 
@@ -537,7 +605,7 @@ public class MainActivity extends AppCompatActivity {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Log.d(TAG, "Value set successfully");
+                                //Log.d(TAG, "Value set successfully");
                             }
                         });
                     }
@@ -558,7 +626,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 mTextView.setText(Float.toString(sensorValue));
-                if (sensorValue >= 40 && sensorValue <= 100) {
+                /*if (sensorValue >= 40 && sensorValue <= 100) {
                     mTextViewSpo2.setText("96%");
                     updateSpo2ValueInDatabase("96%");
                 }
@@ -569,7 +637,7 @@ public class MainActivity extends AppCompatActivity {
                 if (sensorValue >= 131) {
                     mTextViewSpo2.setText("93%");
                     updateSpo2ValueInDatabase("93%");
-                }
+                }*/
 
                 //fetchTriggerValuesAndHandleAlerts();
 
@@ -588,7 +656,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     // Now you can use minTriggerValue in your sensor check
 
-                                    if ((sensorValue >= Alert && !isSeizureAlertShown) || (sensorValue <= lowAlert && !isSeizureAlertShown)) {
+                                    if ((sensorValue >= Alert && !isSeizureAlertShown) || (sensorValue <= lowAlert && sensorValue > 0 && !isSeizureAlertShown)) {
                                         sendData("1");
                                         // Show seizure alert
                                         showSeizure();
@@ -1102,6 +1170,7 @@ public class MainActivity extends AppCompatActivity {
         if (wakeLock.isHeld()) {
             wakeLock.release();
         }
+
 
         // Unregister sensor listener
         //sensorManager.unregisterListener(mSensorEventListener);
